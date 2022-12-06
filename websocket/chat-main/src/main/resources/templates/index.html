@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>websocket聊天室</title>
+</head>
+<body>
+<div>
+    <div><span>IM通讯 </span></div>
+</div>
+<br>
+<div>
+    <div>
+        <label>发送者</label><input id="userId" value="">
+    </div>
+    <div>
+        <label>接收者</label><input id="toUser" value="">
+    </div>
+    <div>
+        <label>请输入发送内容</label><input id="in_room_msg" value="">
+    </div>
+    <div>
+        <button id="user_add">登录</button>
+        <button id="user_send_all">发送消息</button>
+        <button id="user_back">断开连接</button>
+    </div>
+    <div>
+        <textarea id="message_content"></textarea>
+    </div>
+</div>
+</body>
+<script src="https://cdn.staticfile.org/jquery/3.5.1/jquery.min.js"></script>
+<script type="text/javascript">
+    $(function () {
+        var urlPrefix = 'ws://127.0.0.1:8081/ws/';
+        var ws = null;
+
+        var joinfun = function () {
+            var userId = $("#userId").val();
+            if (userId == '') {
+                alert("请输入用户id");
+                return;
+            }
+            var url = urlPrefix + userId;
+            ws = new WebSocket(url);
+            ws.onopen = function () {
+                console.log("建立 websocket 连接...");
+            };
+            ws.onmessage = function (event) {
+                //服务端发送的消息
+                $('#message_content').append(event.data + '\n');
+                // 接到消息之后 任君处置
+            };
+            ws.onclose = function () {
+                $('#message_content').append('用户[' + userId + '] 断开连接!');
+                console.log("关闭 websocket 连接...");
+            }
+        };
+        joinfun();//自动连接
+
+        // 重新连接
+        $('#user_add').click(function () {
+            joinfun();
+        });
+
+        //客户端发送消息到服务器
+        $('#user_send_all').click(function () {
+            var userId = $("#userId").val();
+            var msg = $('#in_room_msg').val();
+            var toUser = $("#toUser").val();
+
+            var req = {
+                userId: userId,
+                content: msg,
+                toUser: toUser
+            }
+
+            if (ws) {
+                ws.send(JSON.stringify(req));
+            }
+        });
+        // 断开连接
+        $('#user_back').click(function () {
+            if (ws) {
+                console.log("手动 关闭 websocket 连接...");
+
+                ws.close();
+            }
+        });
+    });
+</script>
+</html>
